@@ -1,9 +1,8 @@
-"""Pydantic schemas used by the API."""
-from datetime import datetime
-from datetime import date
-from decimal import Decimal
-from uuid import UUID
-from pydantic import BaseModel, EmailStr, Field
+import { datetime } from "datetime";
+import { date } from "datetime";
+import { Decimal } from "decimal";
+import { UUID } from "uuid";
+import { BaseModel, EmailStr, Field } from "pydantic";
 
 
 class UserBase(BaseModel):
@@ -20,8 +19,7 @@ class UserRead(UserBase):
     is_active: bool
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 
 class LoginRequest(BaseModel):
@@ -55,8 +53,7 @@ class ConnectionRead(ConnectionBase):
     id: int
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 
 class SQLQueryRequest(BaseModel):
