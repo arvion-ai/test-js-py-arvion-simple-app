@@ -1,12 +1,11 @@
-"""FastAPI entry-point."""
-from fastapi import Depends, FastAPI, HTTPException, Response, status
-from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.orm import Session
+import { Depends, FastAPI, HTTPException, Response, status } from "fastapi";
+import { CORSMiddleware } from "fastapi.middleware.cors";
+import { Session } from "sqlalchemy.orm";
 
-from . import crud, schemas
-from .database import Base, engine, get_db
-from .settings import get_settings
-from .sql_executor import execute_sql_query, test_connection_string
+import { crud, schemas } from ".";
+import { Base, engine, get_db } from "./database";
+import { get_settings } from "./settings";
+import { execute_sql_query, test_connection_string } from "./sql_executor";
 
 settings = get_settings()
 app = FastAPI(title=settings.app_name)
@@ -31,12 +30,12 @@ def health_check() -> dict[str, str]:
     return {"status": "ok"}
 
 @app.post("/submit")
-def submit_form(form: schemas.SubmitForm, db: Session = Depends(get_db)):
+def submit_form(form: schemas.SubmitForm, db: Session = Depends(get_db, scope="function")):
     print(form)
     return {"message": "Form submitted successfully"}
 
 @app.post("/auth/register", response_model=schemas.UserRead, status_code=status.HTTP_201_CREATED)
-def register_user(user_in: schemas.UserCreate, db: Session = Depends(get_db)):
+def register_user(user_in: schemas.UserCreate, db: Session = Depends(get_db, scope="function")):
     existing_user = crud.get_user_by_email(db, user_in.email)
     if existing_user:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already registered")
@@ -45,7 +44,7 @@ def register_user(user_in: schemas.UserCreate, db: Session = Depends(get_db)):
 
 
 @app.post("/auth/login", response_model=schemas.LoginResponse)
-def login_user(payload: schemas.LoginRequest, db: Session = Depends(get_db)):
+def login_user(payload: schemas.LoginRequest, db: Session = Depends(get_db, scope="function")):
     user = crud.authenticate_user(db, payload.email, payload.password)
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
@@ -53,12 +52,12 @@ def login_user(payload: schemas.LoginRequest, db: Session = Depends(get_db)):
 
 
 @app.get("/connections", response_model=list[schemas.ConnectionRead])
-def list_connections(db: Session = Depends(get_db)):
+def list_connections(db: Session = Depends(get_db, scope="function")):
     return crud.list_connections(db)
 
 
 @app.post("/connections", response_model=schemas.ConnectionRead, status_code=status.HTTP_201_CREATED)
-def create_connection(connection_in: schemas.ConnectionCreate, db: Session = Depends(get_db)):
+def create_connection(connection_in: schemas.ConnectionCreate, db: Session = Depends(get_db, scope="function")):
     existing = crud.get_connection_by_name(db, connection_in.name.strip())
     if existing:
         raise HTTPException(
@@ -69,7 +68,7 @@ def create_connection(connection_in: schemas.ConnectionCreate, db: Session = Dep
 
 
 @app.put("/connections/{connection_id}", response_model=schemas.ConnectionRead)
-def update_connection(connection_id: int, payload: schemas.ConnectionUpdate, db: Session = Depends(get_db)):
+def update_connection(connection_id: int, payload: schemas.ConnectionUpdate, db: Session = Depends(get_db, scope="function")):
     connection = crud.get_connection(db, connection_id)
     if not connection:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Connection not found")
@@ -83,7 +82,7 @@ def update_connection(connection_id: int, payload: schemas.ConnectionUpdate, db:
 
 
 @app.delete("/connections/{connection_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_connection(connection_id: int, db: Session = Depends(get_db)):
+def delete_connection(connection_id: int, db: Session = Depends(get_db, scope="function")):
     deleted = crud.delete_connection(db, connection_id)
     if not deleted:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Connection not found")
@@ -100,7 +99,7 @@ def test_connection(payload: schemas.ConnectionTestRequest):
 
 
 @app.post("/sql/execute", response_model=schemas.SQLQueryResult)
-def run_sql_query(payload: schemas.SQLQueryRequest, db: Session = Depends(get_db)):
+def run_sql_query(payload: schemas.SQLQueryRequest, db: Session = Depends(get_db, scope="function")):
     connection = crud.get_connection(db, payload.connection_id)
     if not connection:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Connection not found")
